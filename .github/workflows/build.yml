@@ -51,8 +51,9 @@ jobs:
         working-directory: ${{ env.SDK_DIR }}
         run: |
           set -euo pipefail
+          # luci.mk is required by the package Makefile. Avoid installing
+          # luci-base as a source package, which pulls lucihttp into this build.
           ./scripts/feeds update luci
-          ./scripts/feeds install -p luci luci-base
 
       - name: Compile package
         working-directory: ${{ env.SDK_DIR }}
