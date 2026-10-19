@@ -31,7 +31,10 @@ jobs:
           PACKAGE="$(find bin -type f \( -name '*luci-app-ponstatus*.apk' -o -name '*luci-app-ponstatus*.ipk' \) -print -quit)"
           test -n "$PACKAGE"
           cp "$PACKAGE" "dist/$(basename "$PACKAGE")"
-          case "$PACKAGE" in\n            *.apk) cp "$PACKAGE" dist/luci-app-ponstatus.apk ;;\n            *.ipk) cp "$PACKAGE" dist/luci-app-ponstatus.ipk ;;\n          esac
+          case "$PACKAGE" in
+            *.apk) cp "$PACKAGE" dist/luci-app-ponstatus.apk ;;
+            *.ipk) cp "$PACKAGE" dist/luci-app-ponstatus.ipk ;;
+          esac
           printf 'Built package: %s\n' "$PACKAGE"
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
