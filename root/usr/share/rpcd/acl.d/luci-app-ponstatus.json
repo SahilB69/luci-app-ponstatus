@@ -1,0 +1,12 @@
+{
+	"luci-app-ponstatus": {
+		"description": "Grant access to PON module status",
+		"read": {
+			"ubus": { "ponstatus": [ "get" ] },
+			"uci": [ "ponstatus" ]
+		},
+		"write": {
+			"uci": [ "ponstatus" ]
+		}
+	}
+}
