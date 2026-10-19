@@ -16,11 +16,26 @@ jobs:
       - name: Install test dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y busybox python3
-      - name: Check shell syntax
+          sudo apt-get install -y busybox python3 nodejs
+      - name: Check shell syntax and package defaults
         run: |
           sh -n root/usr/libexec/rpcd/ponstatus
           sh -n tests/run.sh
           sh -n install.sh
+          test -x root/usr/libexec/rpcd/ponstatus
+          grep -q "option user 'root'" root/etc/config/ponstatus
+      - name: Check LuCI JavaScript syntax
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          for (const file of [
+            'htdocs/luci-static/resources/ponstatus/api.js',
+            'htdocs/luci-static/resources/view/ponstatus/overview.js',
+            'htdocs/luci-static/resources/view/ponstatus/settings.js'
+          ]) {
+            new Function(fs.readFileSync(file, 'utf8'));
+            console.log('Syntax OK:', file);
+          }
+          NODE
       - name: Run mock ONT regression suite
         run: sh tests/run.sh
