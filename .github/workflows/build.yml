@@ -133,4 +133,12 @@ jobs:
           overwrite_files: true
           prerelease: false
           make_latest: true
-          generate_release_notes: true
+          body: |
+            ## What's changed
+            ${{ github.event.head_commit.message }}
+
+            ## Installation
+            Download `luci-app-ponstatus.apk` below and install it on your OpenWrt router.
+
+            ## Source
+            [Browse source at this release commit](${{ github.server_url }}/${{ github.repository }}/tree/${{ github.sha }})
