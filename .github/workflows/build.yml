@@ -16,10 +16,21 @@ jobs:
       - name: Build luci-app-ponstatus with OpenWrt SDK
         uses: openwrt/gh-action-sdk@v8
         env:
-          ARCH: x86-64
+          ARCH: aarch64_cortex-a53
+          TARGET: mediatek/filogic
           PACKAGES: luci-app-ponstatus
           FEEDNAME: luci-app-ponstatus
           PACKAGENAME: luci-app-ponstatus
       - name: Locate generated packages
-        if: always()
-        run: find bin -type f \( -name '*luci-app-ponstatus*.apk' -o -name '*luci-app-ponstatus*.ipk' \) -print 2>/dev/null || true
+        run: |
+          find bin -type f \( -name '*luci-app-ponstatus*.apk' -o -name '*luci-app-ponstatus*.ipk' \) -print
+          test -n "$(find bin -type f \( -name '*luci-app-ponstatus*.apk' -o -name '*luci-app-ponstatus*.ipk' \) -print -quit)"
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: luci-app-ponstatus-mediatek-filogic
+          path: |
+            bin/**/*.apk
+            bin/**/*.ipk
+          if-no-files-found: error
+          retention-days: 90
