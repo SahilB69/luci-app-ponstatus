@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_VERSION:=1.1.0
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 PKG_LICENSE:=Apache-2.0
 
 LUCI_TITLE:=PON module status for ZTE ONTs (Rx/Tx power, temperature, voltage, bias)
@@ -18,6 +18,7 @@ endef
 define Package/luci-app-ponstatus/postinst
 #!/bin/sh
 if [ -z "${IPKG_INSTROOT}" ]; then
+	chmod 600 /etc/config/ponstatus
 	rm -f /tmp/luci-indexcache /tmp/luci-modulecache
 	rm -rf /tmp/ponstatus
 	/etc/init.d/rpcd restart
