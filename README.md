@@ -1,24 +1,94 @@
 # luci-app-ponstatus
 
-LuCI interface for monitoring PON/ONT status on OpenWrt, with a lightweight backend, cached status retrieval, and a responsive web UI.
+LuCI page (**Status → PON Status**) with live Rx/Tx power, temperature, supply voltage and Tx bias current for a ZTE ONT optical module (developed for the F670L). Readings are retrieved from `opticaltst -getpara` over the ONT's Telnet management interface.
 
-The v1.1.0 source archive is preserved under `releases/`. See `docs/BUILD.md` for the OpenWrt SDK build workflow and `CONTRIBUTING.md` for local checks.
+## Requirements
 
-## Features
+- OpenWrt with LuCI (JavaScript-based LuCI; OpenWrt 22.03 or newer is the intended baseline).
+- BusyBox `nc` and `mkfifo`.
+- Router network access to the ONT management IP and Telnet port.
+- A compatible ZTE ONT exposing `opticaltst -getpara`; other models/firmware may not work.
 
-- Live optical module readings from supported ZTE ONTs (tested design target: F670L).
-- Cached backend reads and shared refreshes to reduce ONT sessions.
-- LuCI overview and settings pages.
-- BusyBox/mock-ONT regression tests.
+## Installation
 
-## Compatibility and security
+Choose **one** method.
 
-Requires OpenWrt with LuCI, `rpcd`, BusyBox utilities including `nc` and `mkfifo`, and network reachability to the ONT management interface. Review `root/etc/config/ponstatus` and secure ONT management access before deployment. Credentials are stored in the router configuration; protect router access and do not expose the ONT management service to untrusted networks.
+### Method A — Install a built package (recommended)
 
-## Source and build
+Download an APK or IPK built for your exact OpenWrt release and architecture from the repository's [Actions](https://github.com/SahilB69/luci-app-ponstatus/actions) artifacts or Releases, then copy it to the router. Do not install a package built for a different OpenWrt release/architecture.
 
-The original v1.1.0 source archive is in [`releases/luci-app-ponstatus-1.1.0.tar.gz`](releases/luci-app-ponstatus-1.1.0.tar.gz). The workflow in `.github/workflows/build.yml` builds against an OpenWrt SDK using the upstream `openwrt/gh-action-sdk` action. See [`docs/BUILD.md`](docs/BUILD.md).
+For OpenWrt using APK:
+```sh
+apk add --allow-untrusted /tmp/luci-app-ponstatus-*.apk
+```
 
-## License
+For OpenWrt using opkg:
+```sh
+opkg install /tmp/luci-app-ponstatus-*.ipk
+```
 
-The package Makefile declares Apache-2.0. See `LICENSE`.
+If your router has no package in a compatible format, use Method B.
+
+### Method B — Install from source on the router
+
+1. Download the source archive from the repository and copy it to the router (for example, to `/tmp`).
+2. SSH to the router and run:
+   ```sh
+   cd /tmp
+   tar -xzf luci-app-ponstatus-1.1.0.tar.gz
+   cd luci-app-ponstatus
+   chmod +x install.sh
+   ./install.sh
+   ```
+   Run as `root`. The script checks for LuCI, installs the backend and frontend files, preserves an existing `/etc/config/ponstatus`, sets the configuration file to mode 600, adds installed paths to `/etc/sysupgrade.conf`, and restarts rpcd.
+3. Open LuCI and go to **Status → PON Status → Settings**.
+4. Enter the ONT IP address, Telnet port (usually 23), username and password.
+5. Click **Save & Apply**, then **Test connection**. Open **Overview** to see the readings.
+
+To remove the manually installed files while preserving the configuration:
+```sh
+cd /tmp/luci-app-ponstatus
+./install.sh remove
+```
+
+### Method C — Build a package using the OpenWrt SDK
+
+Use the SDK matching your router's OpenWrt release and target. Copy this package directory to `package/luci-app-ponstatus`, then run:
+```sh
+./scripts/feeds update luci
+./scripts/feeds install luci-base
+make menuconfig
+# Select LuCI → Applications → luci-app-ponstatus
+make package/luci-app-ponstatus/compile V=s
+```
+See [docs/BUILD.md](docs/BUILD.md) for more detail. The resulting package is under `bin/packages/`.
+
+## Configuration and security
+
+The ONT username/password are stored in `/etc/config/ponstatus`; the installer sets permissions to 600. Use a unique ONT password where supported, restrict Telnet/management access to the router's trusted management network, and never expose the ONT's Telnet port to the public internet. Do not share config backups containing credentials.
+
+## How it works
+
+- `ubus call ponstatus get` reads cached data from `/tmp/ponstatus`.
+- When data is older than five seconds, one background refresh is started; concurrent callers share it.
+- The backend uses bounded, expect-style Telnet interaction and reports errors such as `unreachable`, `auth`, `config`, `nodata` and `tools`.
+- The web page polls every ten seconds and pauses while the browser tab is hidden. A previous good reading is retained with a warning if refresh fails.
+
+## Optical metric thresholds
+
+Edit the `zones` entries in `htdocs/luci-static/resources/view/ponstatus/overview.js`. Defaults include Rx warning below -30 dBm (critical below -32 dBm or above -8 dBm), Tx 0.5–5 dBm, temperature warning above 70 °C (critical above 85 °C), and voltage 3.1–3.5 V. Thresholds are model-dependent; confirm against your ONT specifications.
+
+## Troubleshooting
+
+- Stuck on “Reading…”: run `ubus call ponstatus get '{"force":true}'` and inspect `cat /tmp/ponstatus/err`.
+- Cannot reach ONT: check router-to-ONT routing, address, management interface and Telnet port.
+- Backend error: run `/etc/init.d/rpcd restart`, then refresh or log back into LuCI.
+- Empty or unexpected readings: verify that the ONT firmware supports `opticaltst -getpara` and that the configured credentials are correct.
+
+## Tests
+
+Run `tests/run.sh` on Linux with BusyBox and Python 3 installed. It uses a mock ZTE Telnet service; it does not replace testing on a real ONT.
+
+## Source and license
+
+Source code is organized under `root/`, `htdocs/`, and `tests/`. The package Makefile declares Apache-2.0; see [LICENSE](LICENSE).
