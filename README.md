@@ -17,14 +17,17 @@ Choose **one** method.
 
 Download an APK or IPK built for your exact OpenWrt release and architecture from the repository's [Actions](https://github.com/SahilB69/luci-app-ponstatus/actions) artifacts or Releases, then copy it to the router. Do not install a package built for a different OpenWrt release/architecture.
 
-For OpenWrt using APK:
+For OpenWrt using APK, once a tagged release is published, run this single line on the router (root over SSH):
+
 ```sh
-apk add --allow-untrusted /tmp/luci-app-ponstatus-*.apk
+wget -O /tmp/luci-app-ponstatus.apk https://github.com/SahilB69/luci-app-ponstatus/releases/latest/download/luci-app-ponstatus.apk && apk add --allow-untrusted /tmp/luci-app-ponstatus.apk
 ```
 
-For OpenWrt using opkg:
+This downloads the latest published release APK and installs it while allowing an unsigned/untrusted package. Only use it when the release was built for your OpenWrt release and architecture.
+
+If you already have the APK in `/tmp`:
 ```sh
-opkg install /tmp/luci-app-ponstatus-*.ipk
+apk add --allow-untrusted /tmp/luci-app-ponstatus-*.apk
 ```
 
 If your router has no package in a compatible format, use Method B.
