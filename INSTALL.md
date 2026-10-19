@@ -25,6 +25,16 @@ cd /tmp/luci-app-ponstatus
 ./install.sh remove
 ```
 
+## 2. Install directly from the latest GitHub build
+
+On the matching OpenWrt target using APK, run this one-line command as root after the first successful CI release is available:
+
+```sh
+wget -O /tmp/luci-app-ponstatus.apk https://github.com/SahilB69/luci-app-ponstatus/releases/download/latest/luci-app-ponstatus.apk && apk add --allow-untrusted /tmp/luci-app-ponstatus.apk
+```
+
+This downloads the package built by this repository's CI for **mediatek/filogic (aarch64 Cortex-A53)**. Do not use it on a different target or an incompatible OpenWrt release. The first build must finish successfully before the download URL exists.
+
 ## 2. Install an APK/IPK
 
 Copy a package built for your OpenWrt release and architecture to `/tmp`.
