@@ -20,7 +20,7 @@ Download an APK or IPK built for your exact OpenWrt release and architecture fro
 For OpenWrt using APK, once a tagged release is published, run this single line on the router (root over SSH):
 
 ```sh
-wget -O /tmp/luci-app-ponstatus.apk https://github.com/SahilB69/luci-app-ponstatus/releases/latest/download/luci-app-ponstatus.apk && apk add --allow-untrusted /tmp/luci-app-ponstatus.apk
+wget -O /tmp/luci-app-ponstatus.apk https://github.com/SahilB69/luci-app-ponstatus/releases/download/latest/luci-app-ponstatus.apk && apk add --allow-untrusted /tmp/luci-app-ponstatus.apk
 ```
 
 This downloads the latest published release APK and installs it while allowing an unsigned/untrusted package. Only use it when the release was built for your OpenWrt release and architecture.
