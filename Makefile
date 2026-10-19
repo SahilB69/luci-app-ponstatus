@@ -18,7 +18,8 @@ endef
 define Package/luci-app-ponstatus/postinst
 #!/bin/sh
 if [ -z "${IPKG_INSTROOT}" ]; then
-	rm -f /tmp/luci-indexcache /tmp/luci-modulecache /tmp/ponstatus
+	rm -f /tmp/luci-indexcache /tmp/luci-modulecache
+	rm -rf /tmp/ponstatus
 	/etc/init.d/rpcd restart
 fi
 exit 0
