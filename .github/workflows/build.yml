@@ -13,37 +13,81 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      OPENWRT_RELEASE: "25.12.5"
+      OPENWRT_TARGET: "mediatek/filogic"
     steps:
       - uses: actions/checkout@v4
-      - name: Build luci-app-ponstatus with OpenWrt SDK
-        uses: openwrt/gh-action-sdk@v8
-        env:
-          ARCH: aarch64_cortex-a53
-          TARGET: mediatek/filogic
-          PACKAGES: luci-app-ponstatus
-          FEEDNAME: luci-app-ponstatus
-          PACKAGENAME: luci-app-ponstatus
+
+      - name: Install SDK host dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libncurses-dev zlib1g-dev gawk git gettext libssl-dev xsltproc wget unzip python3 rsync file zstd
+
+      - name: Download the matching MediaTek Filogic SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://downloads.openwrt.org/releases/$OPENWRT_RELEASE/targets/$OPENWRT_TARGET"
+          curl -fsSL "$BASE/" -o sdk-index.html
+          SDK_NAME="$(grep -oE 'openwrt-sdk-[^"]+Linux-x86_64\.tar\.zst' sdk-index.html | head -n1)"
+          if [ -z "$SDK_NAME" ]; then
+            echo "Could not find the SDK for OpenWrt $OPENWRT_RELEASE ($OPENWRT_TARGET)." >&2
+            cat sdk-index.html
+            exit 1
+          fi
+          echo "Downloading $SDK_NAME"
+          curl -fL "$BASE/$SDK_NAME" -o sdk.tar.zst
+          echo "$SDK_NAME" > sdk-name.txt
+          tar --zstd -xf sdk.tar.zst
+          SDK_DIR="${SDK_NAME%.tar.zst}"
+          echo "SDK_DIR=$SDK_DIR" >> "$GITHUB_ENV"
+          mkdir -p "$SDK_DIR/package/luci-app-ponstatus"
+          cp Makefile "$SDK_DIR/package/luci-app-ponstatus/"
+          cp -a root htdocs "$SDK_DIR/package/luci-app-ponstatus/"
+          echo "Staged source package in $SDK_DIR/package/luci-app-ponstatus"
+
+      - name: Update LuCI feed
+        working-directory: ${{ env.SDK_DIR }}
+        run: |
+          set -euo pipefail
+          ./scripts/feeds update luci
+          ./scripts/feeds install -p luci luci-base
+
+      - name: Compile package
+        working-directory: ${{ env.SDK_DIR }}
+        run: |
+          set -euo pipefail
+          make defconfig
+          make package/luci-app-ponstatus/compile V=s
+
       - name: Collect package
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p dist
-          PACKAGE="$(find bin -type f \( -name '*luci-app-ponstatus*.apk' -o -name '*luci-app-ponstatus*.ipk' \) -print -quit)"
-          test -n "$PACKAGE"
+          PACKAGE="$(find "$SDK_DIR/bin/packages" -type f \( -name 'luci-app-ponstatus*.apk' -o -name 'luci-app-ponstatus*.ipk' \) -print -quit)"
+          if [ -z "$PACKAGE" ]; then
+            echo "Package artifact not found. SDK output files:" >&2
+            find "$SDK_DIR/bin" -type f | tail -n 100
+            exit 1
+          fi
           cp "$PACKAGE" "dist/$(basename "$PACKAGE")"
           case "$PACKAGE" in
             *.apk) cp "$PACKAGE" dist/luci-app-ponstatus.apk ;;
             *.ipk) cp "$PACKAGE" dist/luci-app-ponstatus.ipk ;;
           esac
           printf 'Built package: %s\n' "$PACKAGE"
+
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
         with:
-          name: luci-app-ponstatus-mediatek-filogic
+          name: luci-app-ponstatus-mediatek-filogic-openwrt-25.12.5
           path: dist/*
           if-no-files-found: error
           retention-days: 90
-      - name: Publish tagged release asset
+
+      - name: Publish release asset
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
