@@ -1,0 +1,4 @@
+#!/bin/sh
+[ -f /etc/config/ponstatus ] && chmod 600 /etc/config/ponstatus
+rm -rf /tmp/luci-indexcache /tmp/luci-modulecache /tmp/ponstatus
+exit 0
