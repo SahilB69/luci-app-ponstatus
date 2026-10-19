@@ -22,6 +22,8 @@ return view.extend({
 		o.placeholder = '23';
 
 		o = s.option(form.Value, 'user', _('Username'));
+		o.default = 'root';
+		o.placeholder = 'root';
 		o.rmempty = false;
 
 		o = s.option(form.Value, 'pass', _('Password'));
