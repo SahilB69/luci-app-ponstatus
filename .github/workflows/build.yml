@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -31,7 +31,7 @@ jobs:
           PACKAGE="$(find bin -type f \( -name '*luci-app-ponstatus*.apk' -o -name '*luci-app-ponstatus*.ipk' \) -print -quit)"
           test -n "$PACKAGE"
           cp "$PACKAGE" "dist/$(basename "$PACKAGE")"
-          cp "$PACKAGE" dist/luci-app-ponstatus.apk
+          case "$PACKAGE" in\n            *.apk) cp "$PACKAGE" dist/luci-app-ponstatus.apk ;;\n            *.ipk) cp "$PACKAGE" dist/luci-app-ponstatus.ipk ;;\n          esac
           printf 'Built package: %s\n' "$PACKAGE"
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
@@ -45,5 +45,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: luci-app-ponstatus ${{ github.ref_name }}
-          files: dist/luci-app-ponstatus.apk
+          files: dist/luci-app-ponstatus.*
           generate_release_notes: true
