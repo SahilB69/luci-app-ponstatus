@@ -1,36 +1,38 @@
-# Building with the OpenWrt SDK
+# Build and test
 
-Build against the SDK matching the router's OpenWrt release, target and architecture. LuCI packages can be release- and ABI-sensitive; do not assume a package built for a different release or target is compatible.
+## Local OpenWrt SDK build
 
-## Local SDK build
+Use the official SDK matching the router's OpenWrt release, target and architecture. Packages may be incompatible across releases or targets.
 
-1. Download and extract the official OpenWrt SDK for your router's release and target from the [OpenWrt downloads](https://downloads.openwrt.org/).
-2. Copy this repository into the SDK as `package/luci-app-ponstatus` (the repository root contains `Makefile`, `root/` and `htdocs/`).
-3. Update the LuCI feed:
-   ```sh
-   ./scripts/feeds update luci
-   ```
-4. Configure and compile:
-   ```sh
-   make defconfig
-   make package/luci-app-ponstatus/compile V=s
-   ```
-5. Find the resulting APK or IPK under `bin/packages/`.
+1. Download and extract the SDK from [OpenWrt downloads](https://downloads.openwrt.org/).
+2. Copy this repository into the SDK tree as \`package/luci-app-ponstatus\`.
+3. Run:
 
-## GitHub Actions
+\`\`\`sh
+./scripts/feeds update luci
+make defconfig
+make package/luci-app-ponstatus/compile V=s
+\`\`\`
 
-- `.github/workflows/build.yml` downloads the OpenWrt 25.12.5 SDK for `mediatek/filogic`, compiles the package, uploads a 90-day workflow artifact, and publishes the package to the `latest` prerelease on pushes to `main`. Version tags beginning with `v` publish versioned releases.
-- `.github/workflows/test.yml` runs shell syntax checks and the BusyBox mock-ONT regression suite.
+The APK/IPK is written under \`bin/packages/\`.
 
-The published `latest` package is specifically built for OpenWrt 25.12.5 on `mediatek/filogic`. Do not install it on a different release or target. For other routers, build with the matching SDK.
+## GitHub Actions and releases
 
-## Manual regression tests
+- \`.github/workflows/build.yml\` builds against the OpenWrt **25.12.5** SDK for **mediatek/filogic**, uploads a 90-day Actions artifact, and publishes the package on pushes to \`main\`.
+- The moving \`latest\` release points to the latest successful main-branch build. Its APK is only for OpenWrt 25.12.5 on mediatek/filogic.
+- Pushing a version tag beginning with \`v\` publishes a version-tagged release.
+- \`.github/workflows/test.yml\` runs shell checks and the mock-ONT regression suite.
 
-On a Linux host with BusyBox and Python 3 installed:
-```sh
+For another OpenWrt release or target, build with the matching SDK instead of installing the published \`latest\` APK.
+
+## Regression tests
+
+On Linux with BusyBox and Python 3 installed, run:
+
+\`\`\`sh
 sh -n root/usr/libexec/rpcd/ponstatus
 sh -n install.sh
 sh tests/run.sh
-```
+\`\`\`
 
-The mock ONT suite covers cache behavior, forced refresh, concurrent callers, authentication failure, no-login firmware, missing optical signal, invalid configuration and connection timeouts. It cannot replace a test against the target ONT and firmware.
+The test suite uses a mock Telnet ONT. It checks common reading, cache, concurrency and connection-error behavior, but does not replace testing on a real ONT.
