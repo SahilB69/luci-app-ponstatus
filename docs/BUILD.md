@@ -1,24 +1,36 @@
 # Building with the OpenWrt SDK
 
-Build against the SDK matching the router's OpenWrt release, target and architecture. LuCI packages can be ABI- and release-sensitive; do not assume an APK built for a different release is compatible.
+Build against the SDK matching the router's OpenWrt release, target and architecture. LuCI packages can be release- and ABI-sensitive; do not assume a package built for a different release or target is compatible.
 
 ## Local SDK build
 
-1. Download and extract the official OpenWrt SDK for the target device and release from the [OpenWrt downloads](https://downloads.openwrt.org/).
-2. Copy this repository's package directory into the SDK as `package/luci-app-ponstatus`. The package directory is the repository root (it contains `Makefile`, `root/` and `htdocs/`).
-3. Update and install the LuCI feed if needed:
+1. Download and extract the official OpenWrt SDK for your router's release and target from the [OpenWrt downloads](https://downloads.openwrt.org/).
+2. Copy this repository into the SDK as `package/luci-app-ponstatus` (the repository root contains `Makefile`, `root/` and `htdocs/`).
+3. Update the LuCI feed:
    ```sh
    ./scripts/feeds update luci
-   ./scripts/feeds install -a -p luci
    ```
-4. Configure the package and compile:
+4. Configure and compile:
    ```sh
-   make menuconfig
-   # Select LuCI -> Applications -> luci-app-ponstatus
+   make defconfig
    make package/luci-app-ponstatus/compile V=s
    ```
-5. Find the generated package under `bin/packages/<arch>/`. Recent OpenWrt releases use APK; older releases may use IPK.
+5. Find the resulting APK or IPK under `bin/packages/`.
 
 ## GitHub Actions
 
-The workflow in `.github/workflows/build.yml` runs the BusyBox mock-ONT regression suite and builds the package with the upstream `openwrt/gh-action-sdk` action for x86/64. Treat that artifact as a CI smoke build, not as a substitute for building with the exact SDK for your router. For release artifacts, use a matching target/release SDK and retain the build logs.
+- `.github/workflows/build.yml` downloads the OpenWrt 25.12.5 SDK for `mediatek/filogic`, compiles the package, uploads a 90-day workflow artifact, and publishes the package to the `latest` prerelease on pushes to `main`. Version tags beginning with `v` publish versioned releases.
+- `.github/workflows/test.yml` runs shell syntax checks and the BusyBox mock-ONT regression suite.
+
+The published `latest` package is specifically built for OpenWrt 25.12.5 on `mediatek/filogic`. Do not install it on a different release or target. For other routers, build with the matching SDK.
+
+## Manual regression tests
+
+On a Linux host with BusyBox and Python 3 installed:
+```sh
+sh -n root/usr/libexec/rpcd/ponstatus
+sh -n install.sh
+sh tests/run.sh
+```
+
+The mock ONT suite covers cache behavior, forced refresh, concurrent callers, authentication failure, no-login firmware, missing optical signal, invalid configuration and connection timeouts. It cannot replace a test against the target ONT and firmware.
