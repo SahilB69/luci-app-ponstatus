@@ -23,4 +23,4 @@ jobs:
           sh -n tests/run.sh
           sh -n install.sh
       - name: Run mock ONT regression suite
-        run: tests/run.sh
+        run: sh tests/run.sh
